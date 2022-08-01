@@ -1,7 +1,8 @@
 from ast import For
 from typing import List
 from uuid import UUID, uuid4
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+import hashlib
 
 from model import Gender, Role, User, UserUpdateRequest
 
@@ -72,3 +73,19 @@ async def update_user(user_update: UserUpdateRequest, user_id: UUID):
     status_code=404,
     detail=f"User with id: {user_id} does not exists"
   )
+
+@app.post("/api/v1/validhook")
+async def validhook(request: Request):
+  simulatorSecretKey = "6g48jk8Sc307tchciRxzkZ"
+  headSignature = request.headers.get("Signature")
+  message_body = await request.body()
+  message_string = str(message_body)
+  splitSignature = headSignature.split(";")
+  signature = splitSignature[0]
+  timestamps = splitSignature[1]
+  hash_obj = hashlib.md5(simulatorSecretKey.encode('utf-8') + signature.encode('utf-8') + timestamps.encode('utf-8'))
+
+  return {
+    "status":"ok", 
+    "validateSignature": hash_obj.hexdigest()
+  }
